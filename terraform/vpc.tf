@@ -5,70 +5,52 @@ provider "aws" {
 
 # Create a VPC to launch our instances into
 resource "aws_vpc" "terraform-vpc" {
-  cidr_block = "10.10.0.0/18"
+  cidr_block = "${var.VPCCidrBlock}"
   tags {
     Name = "${var.vpc_name}"
   }
 }
 
-resource "aws_subnet" "private_az_2a" {
+resource "aws_subnet" "private_az1" {
   vpc_id = "${aws_vpc.terraform-vpc.id}"
-  cidr_block = "10.10.1.0/24"
-  availability_zone = "us-west-2a"
+  cidr_block = "${var.PrivateSubnetCidrBlock1}"
+  availability_zone = "${var.aws_region}${var.AvailabilityZone1}"
   tags {
-    Name = "private_az_1a"
+    Name = "private_az1"
   }
 }
 
-resource "aws_subnet" "private_az_2b" {
+resource "aws_subnet" "private_az2" {
   vpc_id = "${aws_vpc.terraform-vpc.id}"
   cidr_block = "10.10.2.0/24"
-  availability_zone = "us-west-2b"
+  availability_zone = "${var.aws_region}${var.AvailabilityZone2}"
   tags {
-    Name = "private_az_1b"
+    Name = "private_az2"
   }
 }
 
-resource "aws_subnet" "private_az_2c" {
+resource "aws_subnet" "public_az1" {
   vpc_id = "${aws_vpc.terraform-vpc.id}"
-  cidr_block = "10.10.3.0/24"
-  availability_zone = "us-west-2c"
+  cidr_block = "${var.PublicSubnetCidrBlock1}"
+  availability_zone = "${var.aws_region}${var.AvailabilityZone1}"
   tags {
-    Name = "private_az_1c"
+    Name = "public_az1"
   }
 }
 
-resource "aws_subnet" "public_az_2a" {
+resource "aws_subnet" "public_az2" {
   vpc_id = "${aws_vpc.terraform-vpc.id}"
-  cidr_block = "10.10.4.0/24"
-  availability_zone = "us-west-2a"
-  tags {
-    Name = "public_az_1a"
-  }
-}
-
-resource "aws_subnet" "public_az_2b" {
-  vpc_id = "${aws_vpc.terraform-vpc.id}"
-  cidr_block = "10.10.5.0/24"
-  availability_zone = "us-west-2b"
+  cidr_block = "${var.PublicSubnetCidrBlock2}"
+  availability_zone = "${var.aws_region}${var.AvailabilityZone2}"
   tags {
     Name = "public_az_2b"
-  }
-}
-
-resource "aws_subnet" "public_az_2c" {
-  vpc_id = "${aws_vpc.terraform-vpc.id}"
-  cidr_block = "10.10.6.0/24"
-  availability_zone = "us-west-2c"
-  tags {
-    Name = "public_az_2c"
   }
 }
 
 resource "aws_internet_gateway" "terra-igw" {
   vpc_id = "${aws_vpc.terraform-vpc.id}"
   tags {
-    Name = "terraform-vpc-igw"
+    Name = "${var.vpc_name}-igw"
   }
 }
 
@@ -83,23 +65,19 @@ resource "aws_route_table" "public" {
   }
 }
 
-resource "aws_route_table_association" "public_az_2a" {
-  subnet_id = "${aws_subnet.public_az_2a.id}"
+resource "aws_route_table_association" "public_az1" {
+  subnet_id = "${aws_subnet.public_az1.id}"
   route_table_id = "${aws_route_table.public.id}"
 }
 
-resource "aws_route_table_association" "public_az_2b" {
-  subnet_id = "${aws_subnet.public_az_2b.id}"
-  route_table_id = "${aws_route_table.public.id}"
-}
-resource "aws_route_table_association" "public_az_2c" {
-  subnet_id = "${aws_subnet.public_az_2c.id}"
+resource "aws_route_table_association" "public_az2" {
+  subnet_id = "${aws_subnet.public_az2.id}"
   route_table_id = "${aws_route_table.public.id}"
 }
 
 resource "aws_network_acl" "public" {
   vpc_id = "${aws_vpc.terraform-vpc.id}"
-  subnet_ids = ["${aws_subnet.public_az_2a.id}", "${aws_subnet.public_az_2b.id}", "${aws_subnet.public_az_2c.id}"]
+  subnet_ids = ["${aws_subnet.public_az1.id}", "${aws_subnet.public_az1.id}"]
   ingress = {
     protocol = "-1"
     rule_no = 100
@@ -123,7 +101,7 @@ resource "aws_network_acl" "public" {
 
 resource "aws_network_acl" "private" {
   vpc_id = "${aws_vpc.terraform-vpc.id}"
-  subnet_ids = ["${aws_subnet.private_az_2a.id}", "${aws_subnet.private_az_2b.id}", "${aws_subnet.private_az_2c.id}"]
+  subnet_ids = ["${aws_subnet.private_az1.id}", "${aws_subnet.private_az2.id}"]
   ingress = {
     protocol = "-1"
     rule_no = 100
@@ -151,7 +129,7 @@ resource "aws_eip" "nat" {
 
 resource "aws_nat_gateway" "nat_gw" {
   allocation_id = "${aws_eip.nat.id}"
-  subnet_id = "${aws_subnet.public_az_2a.id}"
+  subnet_id = "${aws_subnet.public_az1.id}"
   depends_on = ["aws_internet_gateway.terra-igw"]
 }
 
@@ -166,16 +144,12 @@ resource "aws_route_table" "private" {
   }
 }
 
-resource "aws_route_table_association" "private_az_2a" {
-  subnet_id = "${aws_subnet.private_az_2a.id}"
+resource "aws_route_table_association" "private_az1" {
+  subnet_id = "${aws_subnet.private_az1.id}"
   route_table_id = "${aws_route_table.private.id}"
 }
 
-resource "aws_route_table_association" "private_az_2b" {
-  subnet_id = "${aws_subnet.private_az_2b.id}"
-  route_table_id = "${aws_route_table.private.id}"
-}
-resource "aws_route_table_association" "private_az_2c" {
-  subnet_id = "${aws_subnet.private_az_2c.id}"
+resource "aws_route_table_association" "private_az2" {
+  subnet_id = "${aws_subnet.private_az2.id}"
   route_table_id = "${aws_route_table.private.id}"
 }
