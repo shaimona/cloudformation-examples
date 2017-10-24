@@ -10,6 +10,7 @@ Terraform directory:
 
 
 **AWS CloudFormation StackSets Templates**
+
 CloudFormation StackSets enable an Admin account to deploy/create CloudFormation
 stacks in multiple regions and multiple accounts. In order for StackSets to work,
 it require a role to be created in the target accounts another one in Admin account.
@@ -25,6 +26,7 @@ AWSCloudFormationStackSetExecutionRole.yaml template create role in the target a
 
 
 **Setup**
+
 Admin Account: Run AWSCloudFormationStackSetAdministrationRole.yaml in the admin account
 `aws cloudformation create-stack --stack-name <stack_name> --template-body <template_location>`
 
